@@ -24,7 +24,9 @@ import (
 )
 
 func main() {
-    dna := dnac.NewClient("host/ip", "user", "pass", true)
+    // Used in Development for SelfSigned Certs
+    ignoreSSL := true
+    dna := dnac.NewClient("host/ip", "user", "pass", ignoreSSL)
 
     err := dna.Login()
     if err != nil {
