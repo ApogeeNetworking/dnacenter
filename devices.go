@@ -62,14 +62,9 @@ func (c *Client) GetNetDevice() (DeviceRes, error) {
 	if c.authToken == "" {
 		return DeviceRes{}, fmt.Errorf(loginWarning)
 	}
-	req, err := c.genReq("/intent/api/v1/network-device", "GET", nil)
+	res, err := c.MakeReq("/intent/api/v1/network-device", "GET", nil)
 	if err != nil {
-		return DeviceRes{}, err
-	}
-
-	res, err := c.http.Do(req)
-	if err != nil {
-		return DeviceRes{}, fmt.Errorf("request failed: %v", err)
+		return DeviceRes{}, nil
 	}
 	defer res.Body.Close()
 	var netDevice DeviceRes
@@ -99,13 +94,9 @@ func (c *Client) GetDeviceVLANs(id string) (DeviceVlanRes, error) {
 		return DeviceVlanRes{}, fmt.Errorf(loginWarning)
 	}
 	endpoint := fmt.Sprintf("/intent/api/v1/network-device/%s/vlan", id)
-	req, err := c.genReq(endpoint, "GET", nil)
+	res, err := c.MakeReq(endpoint, "GET", nil)
 	if err != nil {
 		return DeviceVlanRes{}, err
-	}
-	res, err := c.http.Do(req)
-	if err != nil {
-		return DeviceVlanRes{}, fmt.Errorf("request failed: %v", err)
 	}
 	defer res.Body.Close()
 	var deviceVlans DeviceVlanRes
