@@ -60,28 +60,11 @@ func (c *Client) genReq(url, method string, r io.Reader) (*http.Request, error) 
 
 // Login establishes a session with the DNAC API
 func (c *Client) Login() error {
-	// First we have to perform an Auth Login
-	req, err := c.genReq("/api/system/v1/auth/login", "GET", nil)
+	req, err := c.genReq("/api/system/v1/auth/token", "POST", nil)
 	if err != nil {
 		return err
 	}
 	res, err := c.http.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %v", err)
-	}
-	// Grab the Cookie for the Next REQ
-	// We Do Not Have to Do this Afterward
-	authCookie := res.Cookies()[0]
-
-	c.BaseURL = fmt.Sprintf("https://%s/dna", c.IP)
-
-	req, err = c.genReq("/system/api/v1/auth/token", "POST", nil)
-	if err != nil {
-		return fmt.Errorf("failed to create a request: %v", err)
-	}
-	req.AddCookie(authCookie)
-
-	res, err = c.http.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %v", err)
 	}
@@ -91,6 +74,10 @@ func (c *Client) Login() error {
 		Token string `json:"Token"`
 	}
 	json.NewDecoder(res.Body).Decode(&tok)
+	// Retain AuthToken for Client (keeping it private)
 	c.authToken = tok.Token
+	// Reset the BaseURL
+	c.BaseURL = fmt.Sprintf("https://%s/dna", c.IP)
+
 	return nil
 }
