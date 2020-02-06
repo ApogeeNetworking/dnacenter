@@ -12,7 +12,7 @@ import (
 
 const loginWarning string = "you must first login to perform this action"
 
-// Client used for CDNAC Connection Handler
+// Client used for DNA-C Connection Handler
 type Client struct {
 	BaseURL  string
 	Username string
@@ -41,8 +41,9 @@ func NewClient(host, user, pass string, ignoreSSL bool) *Client {
 	}
 }
 
-func (c *Client) genReq(url, method string, r io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, c.BaseURL+url, r)
+// Generates GET/POST Request for API Calls to DNA-C
+func (c *Client) genReq(path, method string, r io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, c.BaseURL+path, r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
@@ -51,7 +52,7 @@ func (c *Client) genReq(url, method string, r io.Reader) (*http.Request, error) 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 	}
-	if strings.Contains(url, "/v1/auth") {
+	if strings.Contains(path, "/v1/auth") {
 		req.SetBasicAuth(c.Username, c.Password)
 	}
 
