@@ -41,8 +41,8 @@ func NewClient(host, user, pass string, ignoreSSL bool) *Client {
 	}
 }
 
-// Generates GET/POST Request for API Calls to DNA-C
-func (c *Client) genReq(path, method string, r io.Reader) (*http.Request, error) {
+// MakeReq on behalf of our DNAC Client
+func (c *Client) MakeReq(path, method string, r io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, c.BaseURL+path, r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
@@ -55,22 +55,20 @@ func (c *Client) genReq(path, method string, r io.Reader) (*http.Request, error)
 	if strings.Contains(path, "/v1/auth") {
 		req.SetBasicAuth(c.Username, c.Password)
 	}
-
-	return req, nil
+	res, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %v", err)
+	}
+	return res, nil
 }
 
 // Login establishes a session with the DNAC API
 func (c *Client) Login() error {
-	req, err := c.genReq("/api/system/v1/auth/token", "POST", nil)
+	res, err := c.MakeReq("/api/system/v1/auth/token", "POST", nil)
 	if err != nil {
 		return err
 	}
-	res, err := c.http.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %v", err)
-	}
 	defer res.Body.Close()
-	// var tok AuthTok
 	var tok struct {
 		Token string `json:"Token"`
 	}
