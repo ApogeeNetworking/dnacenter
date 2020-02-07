@@ -80,3 +80,36 @@ func (c *Client) Login() error {
 
 	return nil
 }
+
+// Version in most DNA-C Responses
+type Version string
+
+// DNARes object returned from POST/PUT/DELETE REQS
+type DNARes struct {
+	Response struct {
+		TaskID string `json:"taskId"`
+		URL    string `json:"url"`
+	} `json:"response"`
+	Version `json:"version"`
+}
+
+// DNATaskCheckRes properties when checking a Tasks Progress
+type DNATaskCheckRes struct {
+	End         int64  `json:"endTime"`
+	Version     int64  `json:"version"`
+	Progress    string `json:"progress"`
+	Start       int64  `json:"startTime"`
+	Username    string `json:"username"`
+	Data        string `json:"data"`
+	IsError     bool   `json:"isError"`
+	RootID      string `json:"rootId"`
+	ServiceType string `json:"serviceType"`
+	InstanceID  string `json:"instanceId"`
+	ID          string `json:"id"`
+}
+
+// DNATaskRes results of a Task Request
+type DNATaskRes struct {
+	Response DNATaskCheckRes `json:"response"`
+	Version  `json:"version"`
+}
