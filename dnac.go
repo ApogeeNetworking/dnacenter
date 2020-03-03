@@ -26,7 +26,7 @@ type Client struct {
 // NewClient creates a reference to the DNAC Client Struct
 func NewClient(host, user, pass string, ignoreSSL bool) *Client {
 	return &Client{
-		BaseURL:  fmt.Sprintf("https://%s", host),
+		BaseURL:  fmt.Sprintf("https://%s/dna", host),
 		Username: user,
 		Password: pass,
 		IP:       host,
@@ -64,7 +64,7 @@ func (c *Client) MakeReq(path, method string, r io.Reader) (*http.Response, erro
 
 // Login establishes a session with the DNAC API
 func (c *Client) Login() error {
-	res, err := c.MakeReq("/api/system/v1/auth/token", "POST", nil)
+	res, err := c.MakeReq("/system/api/v1/auth/token", "POST", nil)
 	if err != nil {
 		return err
 	}
