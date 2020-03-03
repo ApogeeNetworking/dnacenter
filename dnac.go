@@ -76,8 +76,6 @@ func (c *Client) Login() error {
 	// Retain AuthToken for Client (keeping it private)
 	c.authToken = tok.Token
 	// Reset the BaseURL
-	c.BaseURL = fmt.Sprintf("https://%s/dna", c.IP)
-
 	return nil
 }
 
