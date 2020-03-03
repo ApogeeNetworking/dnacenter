@@ -36,6 +36,6 @@ func main() {
     if err != nil {
         log.Fatalf("%v", err)
     }
-    fmt.Println(device)
+    fmt.Println(devices)
 }
 ```
