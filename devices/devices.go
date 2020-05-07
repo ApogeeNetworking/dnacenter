@@ -1,9 +1,25 @@
-package dnac
+package devices
 
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/drkchiloll/dnacenter/requests"
 )
+
+// Service ...
+type Service struct {
+	baseURL string
+	http    *requests.Req
+}
+
+// New creates an instance of a DNA-C Device Service
+func New(uri string, c *requests.Req) *Service {
+	return &Service{
+		baseURL: uri + "/intent/api/v1/network-device",
+		http:    c,
+	}
+}
 
 // Device contains the properties of a Network Device
 type Device struct {
@@ -51,29 +67,29 @@ type Device struct {
 	ID                        string      `json:"id"`
 }
 
-// DeviceRes contains the Response of a DNAC Request
-type DeviceRes struct {
+// Resp contains the Response of a DNAC Request
+type Resp struct {
 	Response []Device `json:"response"`
 	Version  string   `json:"version"`
 }
 
-// GetNetDevice retrieves Network Devices in DNAC
-func (c *Client) GetNetDevice() (DeviceRes, error) {
-	if c.authToken == "" {
-		return DeviceRes{}, fmt.Errorf(loginWarning)
-	}
-	res, err := c.MakeReq("/intent/api/v1/network-device", "GET", nil)
+// Get retrieves Network Devices in DNAC Inventory
+func (s *Service) Get() (Resp, error) {
+	res, err := s.http.MakeReq(s.baseURL, "GET", nil)
 	if err != nil {
-		return DeviceRes{}, nil
+		return Resp{}, nil
 	}
 	defer res.Body.Close()
-	var netDevice DeviceRes
+	var netDevice Resp
 	json.NewDecoder(res.Body).Decode(&netDevice)
 	return netDevice, nil
 }
 
-// DeviceVLAN contains the VLAN Props of a Device
-type DeviceVLAN struct {
+// Delete ...
+func (s *Service) Delete(id string, cleanCfg bool) {}
+
+// VLAN contains the VLAN Props of a Device
+type VLAN struct {
 	VlanNumber     int    `json:"vlanNumber"`
 	NumberOfIPs    int    `json:"numberOfIPs,omitempty"`
 	IPAddress      string `json:"ipAddress,omitempty"`
@@ -82,24 +98,21 @@ type DeviceVLAN struct {
 	NetworkAddress string `json:"networkAddress,omitempty"`
 }
 
-// DeviceVlanRes contains the resp of the Request
-type DeviceVlanRes struct {
-	Response []DeviceVLAN `json:"response"`
-	Version  string       `json:"version"`
+// VlanRes contains the resp of the Request
+type VlanRes struct {
+	Response []VLAN `json:"response"`
+	Version  string `json:"version"`
 }
 
 // GetDeviceVLANs retrieve VLANs associated with a Device
-func (c *Client) GetDeviceVLANs(id string) (DeviceVlanRes, error) {
-	if c.authToken == "" {
-		return DeviceVlanRes{}, fmt.Errorf(loginWarning)
-	}
-	endpoint := fmt.Sprintf("/intent/api/v1/network-device/%s/vlan", id)
-	res, err := c.MakeReq(endpoint, "GET", nil)
+func (s *Service) GetDeviceVLANs(id string) (VlanRes, error) {
+	endpoint := fmt.Sprintf("%s/%s/vlan", s.baseURL, id)
+	res, err := s.http.MakeReq(endpoint, "GET", nil)
 	if err != nil {
-		return DeviceVlanRes{}, err
+		return VlanRes{}, err
 	}
 	defer res.Body.Close()
-	var deviceVlans DeviceVlanRes
+	var deviceVlans VlanRes
 	json.NewDecoder(res.Body).Decode(&deviceVlans)
 	return deviceVlans, nil
 }
