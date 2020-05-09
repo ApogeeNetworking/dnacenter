@@ -24,6 +24,15 @@ func New(uri string, r *requests.Req) *Service {
 type Device struct {
 	Info DeviceInfo `json:"deviceInfo"`
 	ID   string     `json:"id,omitempty"`
+	UID  string     `json:"_id,omitempty"`
+}
+
+// FailedDevice ...
+type FailedDevice struct {
+	Index  int    `json:"index"`
+	Serial string `json:"serialNum"`
+	ID     string `json:"id"`
+	Msg    string `json:"msg"`
 }
 
 // DeviceInfo is a PnP Device
@@ -34,9 +43,6 @@ type DeviceInfo struct {
 	Stack     bool   `json:"stack"`
 	State     string `json:"state,omitempty"`
 	OnbState  string `json:"onbState,omitempty"`
-	// AAACreds       DCreds        `json:"aaaCredentials"`
-	// SudiRequired   bool          `json:"sudiRequired"`
-	// UserSudiSerial []string `json:"userSudiSerialNos"`
 }
 
 // DCreds ...
@@ -47,8 +53,8 @@ type DCreds struct {
 
 // BulkAddResp ...
 type BulkAddResp struct {
-	SuccessList []Device `json:"successList"`
-	FailureList []Device `json:"failureList"`
+	SuccessList []Device       `json:"successList"`
+	FailureList []FailedDevice `json:"failureList"`
 }
 
 // BulkAddDevices to the PnP Database
@@ -69,7 +75,37 @@ func (s *Service) BulkAddDevices(devices []Device) (BulkAddResp, error) {
 	if err != nil {
 		return b, fmt.Errorf("%v", err)
 	}
+	j, _ = json.Marshal(res.Body)
+	fmt.Println(string(j))
 	return b, nil
+}
+
+// UpdateDevice ...
+func (s *Service) UpdateDevice(device Device) {
+	uri := fmt.Sprintf("%s/pnp-device/%s", s.baseURL, device.ID)
+	d := Device{Info: DeviceInfo{Hostname: device.Info.Hostname}}
+	j, _ := json.Marshal(d)
+	body := strings.NewReader(string(j))
+	res, err := s.http.MakeReq(uri, "PUT", body)
+	if err != nil {
+		// return b, fmt.Errorf("%v", err)
+	}
+	defer res.Body.Close()
+	// j, _ = ioutil.ReadAll(res.Body)
+	// fmt.Println(string(j))
+}
+
+// GetDevicesBySerial ...
+func (s *Service) GetDevicesBySerial(serials string) ([]Device, error) {
+	uri := fmt.Sprintf("%s/pnp-device?serialNumber=%s", s.baseURL, serials)
+	res, err := s.http.MakeReq(uri, "GET", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	var devices []Device
+	json.NewDecoder(res.Body).Decode(&devices)
+	return devices, nil
 }
 
 // GetDevice ...
@@ -136,7 +172,7 @@ type DeviceSiteClaim struct {
 	TopOfStackSerial string `json:"topOfStackSerialNumber,omitempty"`
 	// Needed for IOS-XE Device (3850|9200L)
 	// 1A|1B
-	CableScheme string `json:"cablingScheme"`
+	CableScheme string `json:"cablingScheme,omitempty"`
 	ImageInfo   struct {
 		ID   string `json:"imageId"`
 		Skip bool   `json:"skip"`
