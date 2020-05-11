@@ -3,7 +3,6 @@ package pnp
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	"github.com/drkchiloll/dnacenter/requests"
@@ -22,9 +21,12 @@ func New(uri string, r *requests.Req) *Service {
 
 // Device ...
 type Device struct {
-	Info DeviceInfo `json:"deviceInfo"`
-	ID   string     `json:"id,omitempty"`
-	UID  string     `json:"_id,omitempty"`
+	Info           DeviceInfo `json:"deviceInfo"`
+	WorkflowParams struct {
+		CfgList          []DeviceConfig `json:"configList"`
+		TopOfStackSerial string         `json:"topOfStackSerialNumber,omitempty"`
+	} `json:"workflowParameters"`
+	ID string `json:"id,omitempty"`
 }
 
 // FailedDevice ...
@@ -37,18 +39,26 @@ type FailedDevice struct {
 
 // DeviceInfo is a PnP Device
 type DeviceInfo struct {
-	Hostname  string `json:"hostname"`
-	ProductID string `json:"pid"`
-	Serial    string `json:"serialNumber"`
-	Stack     bool   `json:"stack"`
-	State     string `json:"state,omitempty"`
-	OnbState  string `json:"onbState,omitempty"`
+	Hostname   string `json:"hostname"`
+	ProductID  string `json:"pid"`
+	Serial     string `json:"serialNumber"`
+	Stack      bool   `json:"stack"`
+	State      string `json:"state,omitempty"`
+	OnbState   string `json:"onbState,omitempty"`
+	ProjectID  string `json:"projectId,omitempty"`
+	WorkflowID string `json:"workflowId,omitempty"`
 }
 
 // DCreds ...
 type DCreds struct {
 	User string `json:"username"`
 	Pass string `json:"password"`
+}
+
+// GenResp for DeviceClaim and ResetDevice
+type GenResp struct {
+	Message    string `json:"message"`
+	StatusCode int    `json:"statusCode"`
 }
 
 // BulkAddResp ...
@@ -113,6 +123,7 @@ func (s *Service) GetDevice(id string) (Device, error) {
 	uri := fmt.Sprintf("%s/pnp-device/%s", s.baseURL, id)
 	res, err := s.http.MakeReq(uri, "GET", nil)
 	if err != nil {
+		return Device{}, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
 	var device Device
@@ -177,12 +188,27 @@ type DeviceSiteClaim struct {
 		ID   string `json:"imageId"`
 		Skip bool   `json:"skip"`
 	} `json:"imageInfo"`
-	ConfigInfo struct {
-		// TemplateID
-		ID string `json:"configId"`
-		// Template Variables with Values Specified
-		Params []TemplParam `json:"configParameters"`
-	} `json:"configInfo"`
+	ConfigInfo DeviceConfig `json:"configInfo"`
+}
+
+// DeviceReset ...
+type DeviceReset struct {
+	DeviceList []DeviceList `json:"deviceResetList"`
+	ProjectID  string       `json:"projectId,omitempty"`
+	WorkflowID string       `json:"workflowId,omitempty"`
+}
+
+// DeviceList ...
+type DeviceList struct {
+	ConfigList       []DeviceConfig `json:"configList"`
+	DeviceID         string         `json:"deviceId"`
+	TopOfStackSerial string         `json:"topOfStackSerialNumber,omitempty"`
+}
+
+// DeviceConfig ...
+type DeviceConfig struct {
+	TemplateID string       `json:"configId"`
+	Params     []TemplParam `json:"configParameters"`
 }
 
 // TemplParam ...
@@ -192,14 +218,95 @@ type TemplParam struct {
 }
 
 // ClaimDeviceToSite ...
-func (s *Service) ClaimDeviceToSite(sdc DeviceSiteClaim) {
+func (s *Service) ClaimDeviceToSite(sdc DeviceSiteClaim) GenResp {
+	var resp GenResp
 	uri := fmt.Sprintf("%s/pnp-device/site-claim", s.baseURL)
 	j, _ := json.Marshal(sdc)
 	body := strings.NewReader(string(j))
 	res, err := s.http.MakeReq(uri, "POST", body)
 	if err != nil {
+		return resp
 	}
 	defer res.Body.Close()
-	j, _ = ioutil.ReadAll(res.Body)
-	fmt.Println(string(j))
+	json.NewDecoder(res.Body).Decode(&resp)
+	return resp
+}
+
+// ResetDevice ...
+func (s *Service) ResetDevice(dr DeviceReset) GenResp {
+	var resp GenResp
+	// https://dnac-ip/dna/intent/api/v1/onboarding + pnp-device/reset
+	uri := fmt.Sprintf("%s/pnp-device/reset", s.baseURL)
+	j, _ := json.Marshal(dr)
+	body := strings.NewReader(string(j))
+	res, err := s.http.MakeReq(uri, "POST", body)
+	if err != nil {
+		return resp
+	}
+	defer res.Body.Close()
+	json.NewDecoder(res.Body).Decode(&resp)
+	return resp
+}
+
+// Settings PnP Settings
+type Settings struct {
+	TaskTimeouts   Timeouts `json:"taskTimeOuts"`
+	TenantID       string   `json:"tenantId"`
+	AAACredentails DCreds   `json:"aaaCredentials"`
+	DefaultProfile Profile  `json:"defaultProfile"`
+	AcceptEULA     bool     `json:"acceptEula"`
+	ID             string   `json:"id"`
+}
+
+// Timeouts PnP Default Timeouts
+type Timeouts struct {
+	// All In Minutes
+	ImageDownload int `json:"imageDownloadTimeOut"`
+	Config        int `json:"configTimeOut"`
+	General       int `json:"generalTimeOut"`
+}
+
+// Profile PnP Profile Settings
+type Profile struct {
+	Proxy   bool     `json:"proxy"`
+	Cert    string   `json:"cert"`
+	IPAddrs []string `json:"ipAddresses"`
+	Port    int      `json:"port"`
+}
+
+// GetSettings ...
+func (s *Service) GetSettings() (Settings, error) {
+	var settings Settings
+	uri := fmt.Sprintf("%s/pnp-settings", s.baseURL)
+	res, err := s.http.MakeReq(uri, "GET", nil)
+	if err != nil {
+		return settings, err
+	}
+	defer res.Body.Close()
+	json.NewDecoder(res.Body).Decode(&settings)
+	return settings, nil
+}
+
+// UpdateSettings ...
+func (s *Service) UpdateSettings(settings Settings) (Settings, error) {
+	oldSettings, _ := s.GetSettings()
+	if settings.TaskTimeouts.Config == 0 {
+		settings.TaskTimeouts.Config = oldSettings.TaskTimeouts.Config
+	}
+	if settings.TaskTimeouts.General == 0 {
+		settings.TaskTimeouts.General = oldSettings.TaskTimeouts.General
+	}
+	if settings.TaskTimeouts.ImageDownload == 0 {
+		settings.TaskTimeouts.ImageDownload = oldSettings.TaskTimeouts.ImageDownload
+	}
+	j, _ := json.Marshal(settings)
+	body := strings.NewReader(string(j))
+	res, err := s.http.MakeReq(s.baseURL+"/pnp-settings", "PUT", body)
+	var newSettings Settings
+	if err != nil {
+		return newSettings, err
+	}
+	defer res.Body.Close()
+	json.NewDecoder(res.Body).Decode(&newSettings)
+	return newSettings, nil
 }
