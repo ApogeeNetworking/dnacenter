@@ -54,5 +54,8 @@ func (r *Req) MakeReq(uri, method string, b io.Reader) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %v", err)
 	}
+	if res.StatusCode == 401 {
+		return nil, fmt.Errorf("token expired, %v", res.StatusCode)
+	}
 	return res, nil
 }
