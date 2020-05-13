@@ -39,14 +39,41 @@ type FailedDevice struct {
 
 // DeviceInfo is a PnP Device
 type DeviceInfo struct {
-	Hostname   string `json:"hostname"`
-	ProductID  string `json:"pid"`
-	Serial     string `json:"serialNumber"`
-	Stack      bool   `json:"stack"`
-	State      string `json:"state,omitempty"`
-	OnbState   string `json:"onbState,omitempty"`
-	ProjectID  string `json:"projectId,omitempty"`
-	WorkflowID string `json:"workflowId,omitempty"`
+	// Device Name in the DNA-C GUI
+	// Cannot be more than 32 Chars Long
+	Hostname string `json:"hostname"`
+	// Fully Qualified Cisco Model
+	ProductID string `json:"pid"`
+	Serial    string `json:"serialNumber"`
+	Stack     bool   `json:"stack"`
+	// Unclaimed|Planned|Provisioned
+	State        string    `json:"state,omitempty"`
+	OnbState     string    `json:"onbState,omitempty"`
+	ImageVersion string    `json:"imageVersion"`
+	ProjectID    string    `json:"projectId,omitempty"`
+	WorkflowID   string    `json:"workflowId,omitempty"`
+	StackInfo    StackInfo `json:"stackInfo"`
+}
+
+// StackInfo ...
+type StackInfo struct {
+	// If TRUE then all Other Properties of this Struct will be omitted
+	// Only IOS XE Versions SupportWorkFlows
+	SupportsWorkflows bool          `json:"supportsStackWorkflows"`
+	IsFullRing        bool          `json:"isFullRing,omitempty"`
+	MemberList        []StackMember `json:"stackMemberList,omitempty"`
+}
+
+// StackMember ...
+type StackMember struct {
+	StackNumber int    `json:"stackNumber"`
+	Serial      string `json:"serial"`
+	Role        string `json:"role"`
+	Priority    int    `json:"priority"`
+	MacAddr     string `json:"macAddress"`
+	State       string `json:"state"`
+	// The Fully Qualified Cisco Switch Model #
+	ProductID string `json:"pid"`
 }
 
 // DCreds ...
@@ -55,10 +82,15 @@ type DCreds struct {
 	Pass string `json:"password"`
 }
 
-// GenResp for DeviceClaim and ResetDevice
+// GenResp for ResetDevice
 type GenResp struct {
 	Message    string `json:"message"`
 	StatusCode int    `json:"statusCode"`
+}
+
+// DevClaimResp ...
+type DevClaimResp struct {
+	Response string `json:"response"`
 }
 
 // BulkAddResp ...
@@ -129,6 +161,26 @@ func (s *Service) GetDevice(id string) (Device, error) {
 	var device Device
 	json.NewDecoder(res.Body).Decode(&device)
 	return device, nil
+}
+
+func (s *Service) devRetrieval(devs []Device, offset int) []Device {
+	var devices []Device
+	uri := fmt.Sprintf("%s/pnp-device?offset=%v", s.baseURL, offset)
+	res, _ := s.http.MakeReq(uri, "GET", nil)
+	defer res.Body.Close()
+	json.NewDecoder(res.Body).Decode(&devices)
+	// Merged Device Slice(s)
+	devs = append(devs, devices...)
+	if len(devices) < offset {
+		return devs
+	}
+	offset += 50
+	return s.devRetrieval(devs, offset)
+}
+
+// GetDevices ...
+func (s *Service) GetDevices() ([]Device, error) {
+	return s.devRetrieval([]Device{}, 0), nil
 }
 
 type cableScheme struct {
@@ -218,8 +270,8 @@ type TemplParam struct {
 }
 
 // ClaimDeviceToSite ...
-func (s *Service) ClaimDeviceToSite(sdc DeviceSiteClaim) GenResp {
-	var resp GenResp
+func (s *Service) ClaimDeviceToSite(sdc DeviceSiteClaim) DevClaimResp {
+	var resp DevClaimResp
 	uri := fmt.Sprintf("%s/pnp-device/site-claim", s.baseURL)
 	j, _ := json.Marshal(sdc)
 	body := strings.NewReader(string(j))
@@ -309,4 +361,52 @@ func (s *Service) UpdateSettings(settings Settings) (Settings, error) {
 	defer res.Body.Close()
 	json.NewDecoder(res.Body).Decode(&newSettings)
 	return newSettings, nil
+}
+
+// DeviceHistory ...
+type DeviceHistory struct {
+	TimeStamp int64           `json:"timestamp"`
+	Details   string          `json:"details"`
+	ErrorFlag bool            `json:"errorFlag"`
+	TaskInfo  HistoryTaskInfo `json:"historyTaskInfo"`
+}
+
+// HistoryTaskInfo ...
+type HistoryTaskInfo struct {
+	Name      string     `json:"name"`
+	Type      string     `json:"type"`
+	TimeTaken int        `json:"timeTaken"`
+	List      []WorkItem `json:"workItemList"`
+}
+
+// WorkItem ...
+type WorkItem struct {
+	State        string `json:"state"`
+	Command      string `json:"command"`
+	AgentCommand string `json:"agentCommand"`
+	CmdID        string `json:"cmdId"`
+	RetryCount   int    `json:"retryCount"`
+	StartTime    int64  `json:"startTime"`
+	EndTime      int64  `json:"endTime"`
+	TimeTaken    int    `json:"timeTaken"`
+	Output       string `json:"outputStr"`
+}
+
+// GetDeviceHistory ...TaskTimeouts
+func (s *Service) GetDeviceHistory(serial string) ([]DeviceHistory, error) {
+	uri := fmt.Sprintf("%s/pnp-device/history?serialNumber=%s", s.baseURL, serial)
+	type dhResp struct {
+		Response []DeviceHistory `json:"response"`
+	}
+	var deviceHistory dhResp
+	res, err := s.http.MakeReq(uri, "GET", nil)
+	if err != nil {
+		return deviceHistory.Response, err
+	}
+	defer res.Body.Close()
+	err = json.NewDecoder(res.Body).Decode(&deviceHistory)
+	if err != nil {
+		return deviceHistory.Response, err
+	}
+	return deviceHistory.Response, nil
 }
