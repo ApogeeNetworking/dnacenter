@@ -67,7 +67,7 @@ type StackInfo struct {
 // StackMember ...
 type StackMember struct {
 	StackNumber int    `json:"stackNumber"`
-	Serial      string `json:"serial"`
+	Serial      string `json:"serialNumber"`
 	Role        string `json:"role"`
 	Priority    int    `json:"priority"`
 	MacAddr     string `json:"macAddress"`
