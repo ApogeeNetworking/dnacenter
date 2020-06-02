@@ -137,6 +137,21 @@ func (s *Service) UpdateDevice(device Device) {
 	// fmt.Println(string(j))
 }
 
+// DeleteDevice ...
+func (s *Service) DeleteDevice(id string) (Device, error) {
+	var device Device
+	uri := fmt.Sprintf("%s/pnp-device/%s", s.baseURL, id)
+	res, err := s.http.MakeReq(uri, "DELETE", nil)
+	if err != nil {
+		return device, fmt.Errorf("%v", err)
+	}
+	defer res.Body.Close()
+	if err = json.NewDecoder(res.Body).Decode(&device); err != nil {
+		return device, fmt.Errorf("%v", err)
+	}
+	return device, nil
+}
+
 // GetDevicesBySerial ...
 func (s *Service) GetDevicesBySerial(serials string) ([]Device, error) {
 	uri := fmt.Sprintf("%s/pnp-device?serialNumber=%s", s.baseURL, serials)
