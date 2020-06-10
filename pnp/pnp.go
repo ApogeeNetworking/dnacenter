@@ -1,8 +1,10 @@
 package pnp
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/drkchiloll/dnacenter/requests"
@@ -138,18 +140,34 @@ func (s *Service) UpdateDevice(device Device) {
 }
 
 // DeleteDevice ...
-func (s *Service) DeleteDevice(id string) (Device, error) {
+func (s *Service) DeleteDevice(id string) (string, error) {
 	var device Device
 	uri := fmt.Sprintf("%s/pnp-device/%s", s.baseURL, id)
 	res, err := s.http.MakeReq(uri, "DELETE", nil)
 	if err != nil {
-		return device, fmt.Errorf("%v", err)
+		return "", fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
-	if err = json.NewDecoder(res.Body).Decode(&device); err != nil {
-		return device, fmt.Errorf("%v", err)
+	data, _ := ioutil.ReadAll(res.Body)
+	reader := ioutil.NopCloser(bytes.NewReader(data))
+	defer reader.Close()
+	if err = json.NewDecoder(reader).Decode(&device); err != nil {
+		return "", fmt.Errorf("%v", err)
 	}
-	return device, nil
+	if device.ID == "" {
+		reader = ioutil.NopCloser(bytes.NewReader(data))
+		type resp struct {
+			Response struct {
+				Message string `json:"message"`
+			} `json:"response"`
+		}
+		var response resp
+		if err = json.NewDecoder(reader).Decode(&response); err != nil {
+			return "", fmt.Errorf("%v", err)
+		}
+		return response.Response.Message, nil
+	}
+	return device.Info.State, nil
 }
 
 // GetDevicesBySerial ...
