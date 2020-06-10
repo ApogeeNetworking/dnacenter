@@ -1,10 +1,12 @@
 package siteprofile
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 
+	"github.com/drkchiloll/dnacenter/models"
 	"github.com/drkchiloll/dnacenter/requests"
 )
 
@@ -22,14 +24,57 @@ func New(uri string, r *requests.Req) *Service {
 	return &Service{baseURL: ep, http: r}
 }
 
+// Profile ...
+type Profile struct {
+	ID        string `json:"siteProfileUuid"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	NameSpace string `json:"namespace"`
+	SiteCount int    `json:"siteCount,omitempty"`
+	Sites     []Site `json:"sites,omitempty"`
+}
+
+// Site ...
+type Site struct {
+	IsInherited bool   `json:"isInherited"`
+	Name        string `json:"name"`
+	ID          string `json:"uuid"`
+}
+
 // Get ...
-func (s *Service) Get() {
+func (s *Service) Get() ([]Profile, error) {
+	type getResp struct {
+		Response []Profile `json:"response"`
+	}
+	var resp getResp
 	res, err := s.http.MakeReq(s.baseURL, "GET", nil)
 	if err != nil {
+		return resp.Response, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
-	j, _ := ioutil.ReadAll(res.Body)
-	fmt.Println(string(j))
+	if err = json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		return resp.Response, fmt.Errorf("%v", err)
+	}
+	return resp.Response, nil
+}
+
+// GetByID ...
+func (s *Service) GetByID(id string) (Profile, error) {
+	qs := "includeSites=true&excludeSettings=true&populated=false"
+	uri := fmt.Sprintf("%s/%s?%s", s.baseURL, id, qs)
+	type getResp struct {
+		Response Profile `json:"response"`
+	}
+	var resp getResp
+	res, err := s.http.MakeReq(uri, "GET", nil)
+	if err != nil {
+		return resp.Response, fmt.Errorf("%v", err)
+	}
+	defer res.Body.Close()
+	if err = json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		return resp.Response, fmt.Errorf("%v", err)
+	}
+	return resp.Response, nil
 }
 
 // GetSiteTemplates ...
@@ -71,11 +116,39 @@ func (s *Service) GetSiteTemplates(siteID string) {
 // }
 
 // AssignSite ...
-func (s *Service) AssignSite(profileID, siteID string) {
+func (s *Service) AssignSite(profileID, siteID string) (models.Task, error) {
 	// POST /siteprofile/{profileID}/site/{siteID}
+	type spResp struct {
+		Response models.Task `json:"response"`
+	}
+	var resp spResp
+	uri := fmt.Sprintf("%s/%s/site/%s", s.baseURL, profileID, siteID)
+	res, err := s.http.MakeReq(uri, "POST", nil)
+	if err != nil {
+		return resp.Response, fmt.Errorf("%v", err)
+	}
+	defer res.Body.Close()
+	if err = json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		return resp.Response, fmt.Errorf("%v", err)
+	}
+	return resp.Response, nil
 }
 
 // RemoveSite ...
-func (s *Service) RemoveSite(profileID, siteID string) {
+func (s *Service) RemoveSite(profileID, siteID string) (models.Task, error) {
 	/* DELETE /siteprofile/{profileID}/site/{siteID} */
+	type spResp struct {
+		Response models.Task `json:"response"`
+	}
+	var resp spResp
+	uri := fmt.Sprintf("%s/%s/site/%s", s.baseURL, profileID, siteID)
+	res, err := s.http.MakeReq(uri, "DELETE", nil)
+	if err != nil {
+		return resp.Response, fmt.Errorf("%v", err)
+	}
+	defer res.Body.Close()
+	if err = json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		return resp.Response, fmt.Errorf("%v", err)
+	}
+	return resp.Response, nil
 }
