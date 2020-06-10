@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"strings"
 
 	"github.com/drkchiloll/dnacenter/requests"
@@ -18,16 +19,19 @@ type Service struct {
 
 // New creates an instance of a DNA-C Plug N Play Service
 func New(uri string, r *requests.Req) *Service {
-	return &Service{baseURL: uri + "/intent/api/v1/onboarding", http: r}
+	fqURI, _ := url.Parse(uri)
+	host := fqURI.Host
+	url := fmt.Sprintf("https://%s/api/v1/onboarding", host)
+	return &Service{baseURL: url, http: r}
 }
 
 // Device ...
 type Device struct {
 	Info           DeviceInfo `json:"deviceInfo"`
 	WorkflowParams struct {
-		CfgList          []DeviceConfig `json:"configList"`
+		CfgList          []DeviceConfig `json:"configList,omitempty"`
 		TopOfStackSerial string         `json:"topOfStackSerialNumber,omitempty"`
-	} `json:"workflowParameters"`
+	} `json:"workflowParameters,omitempty"`
 	ID string `json:"id,omitempty"`
 }
 
@@ -51,17 +55,17 @@ type DeviceInfo struct {
 	// Unclaimed|Planned|Provisioned
 	State        string    `json:"state,omitempty"`
 	OnbState     string    `json:"onbState,omitempty"`
-	ImageVersion string    `json:"imageVersion"`
+	ImageVersion string    `json:"imageVersion,omitempty"`
 	ProjectID    string    `json:"projectId,omitempty"`
 	WorkflowID   string    `json:"workflowId,omitempty"`
-	StackInfo    StackInfo `json:"stackInfo"`
+	StackInfo    StackInfo `json:"stackInfo,omitempty"`
 }
 
 // StackInfo ...
 type StackInfo struct {
 	// If TRUE then all Other Properties of this Struct will be omitted
 	// Only IOS XE Versions SupportWorkFlows
-	SupportsWorkflows bool          `json:"supportsStackWorkflows"`
+	SupportsWorkflows bool          `json:"supportsStackWorkflows,omitempty"`
 	IsFullRing        bool          `json:"isFullRing,omitempty"`
 	MemberList        []StackMember `json:"stackMemberList,omitempty"`
 }
@@ -107,6 +111,7 @@ func (s *Service) BulkAddDevices(devices []Device) (BulkAddResp, error) {
 	// Marshal devices into JSON Object
 	j, _ := json.Marshal(devices)
 	body := strings.NewReader(string(j))
+	fmt.Println(body)
 	res, err := s.http.MakeReq(
 		fmt.Sprintf("%s/pnp-device/import", s.baseURL),
 		"POST",
@@ -115,12 +120,12 @@ func (s *Service) BulkAddDevices(devices []Device) (BulkAddResp, error) {
 	if err != nil {
 		return b, fmt.Errorf("%v", err)
 	}
-	err = json.NewDecoder(res.Body).Decode(&b)
-	if err != nil {
-		return b, fmt.Errorf("%v", err)
-	}
-	j, _ = json.Marshal(res.Body)
-	fmt.Println(string(j))
+	k, _ := ioutil.ReadAll(res.Body)
+	fmt.Println(string(k))
+	// err = json.NewDecoder(res.Body).Decode(&b)
+	// if err != nil {
+	// 	return b, fmt.Errorf("%v", err)
+	// }
 	return b, nil
 }
 

@@ -152,3 +152,41 @@ func (s *Service) RemoveSite(profileID, siteID string) (models.Task, error) {
 	}
 	return resp.Response, nil
 }
+
+/*
+// POST to /api/v1/siteprofile
+{
+    "siteProfileUuid": "",
+    "version": 0,
+    "name": "2960Profile",
+    "namespace": "switching",
+    "status": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedDatetime": 0,
+    "siteCount": 0,
+    "profileAttributes": [],
+    "id": "",
+    "attributesList": [],
+    "siteProfileType": "",
+    "namingPrefix": "",
+    "primaryDeviceType": "",
+    "secondaryDeviceType": "",
+    "interfaceList": [],
+    "groupTypeList": [],
+    "siteAssociationId": "",
+    "sites": []
+}
+
+{
+    "response": {
+        "siteProfileUuid": "dfa7f2df-15ec-4d42-ae23-61d438cdd71b",
+        "version": 1,
+        "name": "2960Profile",
+        "namespace": "switching",
+        "status": "draft",
+        "lastUpdatedBy": "admin",
+        "lastUpdatedDatetime": 1587758418061
+    },
+    "version": "1.0"
+}
+*/
