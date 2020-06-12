@@ -111,7 +111,6 @@ func (s *Service) BulkAddDevices(devices []Device) (BulkAddResp, error) {
 	// Marshal devices into JSON Object
 	j, _ := json.Marshal(devices)
 	body := strings.NewReader(string(j))
-	fmt.Println(body)
 	res, err := s.http.MakeReq(
 		fmt.Sprintf("%s/pnp-device/import", s.baseURL),
 		"POST",
@@ -120,12 +119,10 @@ func (s *Service) BulkAddDevices(devices []Device) (BulkAddResp, error) {
 	if err != nil {
 		return b, fmt.Errorf("%v", err)
 	}
-	k, _ := ioutil.ReadAll(res.Body)
-	fmt.Println(string(k))
-	// err = json.NewDecoder(res.Body).Decode(&b)
-	// if err != nil {
-	// 	return b, fmt.Errorf("%v", err)
-	// }
+	err = json.NewDecoder(res.Body).Decode(&b)
+	if err != nil {
+		return b, fmt.Errorf("%v", err)
+	}
 	return b, nil
 }
 
@@ -140,8 +137,8 @@ func (s *Service) UpdateDevice(device Device) {
 		// return b, fmt.Errorf("%v", err)
 	}
 	defer res.Body.Close()
-	// j, _ = ioutil.ReadAll(res.Body)
-	// fmt.Println(string(j))
+	j, _ = ioutil.ReadAll(res.Body)
+	fmt.Println(string(j))
 }
 
 // DeleteDevice ...
