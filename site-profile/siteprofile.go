@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"net/url"
 
-	"github.com/drkchiloll/dnacenter/models"
-	"github.com/drkchiloll/dnacenter/requests"
+	"github.com/ApogeeNetworking/dnacenter/models"
+	"github.com/ApogeeNetworking/dnacenter/requests"
 )
 
 // Service ...package

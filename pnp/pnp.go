@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/drkchiloll/dnacenter/requests"
+	"github.com/ApogeeNetworking/dnacenter/requests"
 )
 
 // Service ...

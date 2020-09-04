@@ -20,3 +20,4 @@
 .env
 *.conf
 *.json
+go.sum

@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/drkchiloll/dnacenter/devices"
-	"github.com/drkchiloll/dnacenter/pnp"
-	"github.com/drkchiloll/dnacenter/requests"
-	siteprofile "github.com/drkchiloll/dnacenter/site-profile"
-	"github.com/drkchiloll/dnacenter/sites"
-	"github.com/drkchiloll/dnacenter/swim"
-	"github.com/drkchiloll/dnacenter/templates"
+	"github.com/ApogeeNetworking/dnacenter/devices"
+	"github.com/ApogeeNetworking/dnacenter/pnp"
+	"github.com/ApogeeNetworking/dnacenter/requests"
+	siteprofile "github.com/ApogeeNetworking/dnacenter/site-profile"
+	"github.com/ApogeeNetworking/dnacenter/sites"
+	"github.com/ApogeeNetworking/dnacenter/swim"
+	"github.com/ApogeeNetworking/dnacenter/templates"
 )
 
 const loginWarning string = "you must first login to perform this action"

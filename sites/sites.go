@@ -3,7 +3,7 @@ package sites
 import (
 	"encoding/json"
 
-	"github.com/drkchiloll/dnacenter/requests"
+	"github.com/ApogeeNetworking/dnacenter/requests"
 )
 
 // Service ...

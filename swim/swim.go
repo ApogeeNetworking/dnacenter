@@ -1,6 +1,6 @@
 package swim
 
-import "github.com/drkchiloll/dnacenter/requests"
+import "github.com/ApogeeNetworking/dnacenter/requests"
 
 // DNA-C SoftWare Image Management (SWIM)
 

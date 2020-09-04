@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/drkchiloll/dnacenter/requests"
+	"github.com/ApogeeNetworking/dnacenter/requests"
 )
 
 // Service ...
