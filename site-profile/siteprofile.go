@@ -3,11 +3,11 @@ package siteprofile
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 
 	"github.com/ApogeeNetworking/dnacenter/models"
 	"github.com/ApogeeNetworking/dnacenter/requests"
+	"github.com/ApogeeNetworking/dnacenter/templates"
 )
 
 // Service ...package
@@ -78,14 +78,53 @@ func (s *Service) GetByID(id string) (Profile, error) {
 }
 
 // GetSiteTemplates ...
-func (s *Service) GetSiteTemplates(siteID string) {
+func (s *Service) GetSiteTemplates(siteID string) []templates.Template {
 	ep := fmt.Sprintf("/site/%v", siteID)
 	res, err := s.http.MakeReq(s.baseURL+ep, "GET", nil)
 	if err != nil {
 	}
 	defer res.Body.Close()
-	j, _ := ioutil.ReadAll(res.Body)
-	fmt.Println(string(j))
+
+	type Attr struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+		Attr  []Attr `json:"attribs"`
+	}
+	type ProfAttr struct {
+		ProfAttr []Attr `json:"profileAttributes"`
+	}
+	type SiteProfSiteTemps struct {
+		Resp []ProfAttr `json:"response"`
+	}
+	var profAttrResp SiteProfSiteTemps
+	json.NewDecoder(res.Body).Decode(&profAttrResp)
+	profAttrs := profAttrResp.Resp
+	var templs []templates.Template
+	for _, attr := range profAttrs {
+		for _, pAttr := range attr.ProfAttr {
+			var templ templates.Template
+			if pAttr.Key == "day0.templates" {
+				for _, dfAttr := range pAttr.Attr {
+					for _, dsAttr := range dfAttr.Attr {
+						for _, dtAttr := range dsAttr.Attr {
+							for _, dtagAttr := range dtAttr.Attr {
+								if dtagAttr.Key == "template.id" {
+									templ.ID = dtagAttr.Value
+									for _, tmplAttr := range dtagAttr.Attr {
+										if tmplAttr.Key == "template.name" {
+											templ.Name = tmplAttr.Value
+											templs = append(templs, templ)
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return templs
 }
 
 // Create ...
