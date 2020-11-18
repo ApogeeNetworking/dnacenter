@@ -172,7 +172,7 @@ func (s *Service) DeleteDevice(id string) (string, error) {
 	return device.Info.State, nil
 }
 
-// GetDevicesBySerial ...
+// GetDevicesBySerial serial1,serial2,serial3...
 func (s *Service) GetDevicesBySerial(serials string) ([]Device, error) {
 	uri := fmt.Sprintf("%s/pnp-device?serialNumber=%s", s.baseURL, serials)
 	res, err := s.http.MakeReq(uri, "GET", nil)
