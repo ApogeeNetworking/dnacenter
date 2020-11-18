@@ -6,7 +6,7 @@ This is a work in progress
 Install via **go get**:
 
 ```shell
-go get -u github.com/drkchiloll/dnacenter
+go get -u github.com/ApogeeNetworking/dnacenter
 ```
 
 ## Usage
@@ -20,7 +20,7 @@ import (
     "fmt"
     "log"
 
-    dnac "github.com/drkchiloll/dnacenter"
+    dnac "github.com/ApogeeNetworking/dnacenter"
 )
 
 func main() {
@@ -32,10 +32,9 @@ func main() {
     if err != nil {
         log.Fatalf("%v", err)
     }
-    devices, err := dna.GetNetDevice()
+    pnpDevice, err := dna.PnP.GetDevice("id")
     if err != nil {
-        log.Fatalf("%v", err)
+        // Do something about the Error
     }
-    fmt.Println(devices)
 }
 ```
