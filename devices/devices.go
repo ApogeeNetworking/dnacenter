@@ -3,6 +3,7 @@ package devices
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/ApogeeNetworking/dnacenter/requests"
 )
@@ -15,87 +16,67 @@ type Service struct {
 
 // New creates an instance of a DNA-C Device Service
 func New(uri string, c *requests.Req) *Service {
+	uri = strings.ReplaceAll(uri, "/dna", "")
 	return &Service{
-		baseURL: uri + "/intent/api/v1/network-device",
+		baseURL: uri + "/api/v1/network-device",
 		http:    c,
 	}
 }
 
-// Device contains the properties of a Network Device
-type Device struct {
-	Hostname                  string      `json:"hostname"`
-	RoleSource                string      `json:"roleSource"`
-	InventoryStatusDetail     string      `json:"inventoryStatusDetail"`
-	ApManagerInterfaceIP      string      `json:"apManagerInterfaceIp"`
-	AssociatedWlcIP           string      `json:"associatedWlcIp"`
-	BootDateTime              interface{} `json:"bootDateTime"`
-	CollectionStatus          string      `json:"collectionStatus"`
-	ErrorCode                 string      `json:"errorCode"`
-	ErrorDescription          interface{} `json:"errorDescription"`
-	Family                    string      `json:"family"`
-	InterfaceCount            string      `json:"interfaceCount"`
-	LastUpdated               string      `json:"lastUpdated"`
-	LineCardCount             string      `json:"lineCardCount"`
-	LineCardID                string      `json:"lineCardId"`
-	LocationName              interface{} `json:"locationName"`
-	ManagementIPAddress       string      `json:"managementIpAddress"`
-	MemorySize                string      `json:"memorySize"`
-	PlatformID                string      `json:"platformId"`
-	ReachabilityFailureReason string      `json:"reachabilityFailureReason"`
-	ReachabilityStatus        string      `json:"reachabilityStatus"`
-	Series                    string      `json:"series"`
-	SnmpContact               string      `json:"snmpContact"`
-	SnmpLocation              string      `json:"snmpLocation"`
-	TagCount                  string      `json:"tagCount"`
-	TunnelUDPPort             string      `json:"tunnelUdpPort"`
-	UptimeSeconds             int         `json:"uptimeSeconds"`
-	WaasDeviceMode            interface{} `json:"waasDeviceMode"`
-	CollectionInterval        string      `json:"collectionInterval"`
-	SoftwareType              interface{} `json:"softwareType"`
-	SoftwareVersion           string      `json:"softwareVersion"`
-	LastUpdateTime            int64       `json:"lastUpdateTime"`
-	UpTime                    string      `json:"upTime"`
-	DeviceSupportLevel        string      `json:"deviceSupportLevel"`
-	MacAddress                string      `json:"macAddress"`
-	SerialNumber              string      `json:"serialNumber"`
-	Type                      string      `json:"type"`
-	Description               interface{} `json:"description"`
-	Location                  interface{} `json:"location"`
-	Role                      string      `json:"role"`
-	InstanceTenantID          string      `json:"instanceTenantId"`
-	InstanceUUID              string      `json:"instanceUuid"`
-	ID                        string      `json:"id"`
-}
-
-// Resp contains the Response of a DNAC Request
-type Resp struct {
-	Response []Device `json:"response"`
-	Version  string   `json:"version"`
-}
-
 // Get retrieves Network Devices in DNAC Inventory
-func (s *Service) Get() (Resp, error) {
-	res, err := s.http.MakeReq(s.baseURL, "GET", nil)
+func (s *Service) Get(param ReqParams) ([]Device, error) {
+	var uri string
+	switch {
+	case param.Hostname != "":
+		uri = fmt.Sprintf("%s?hostname=%s", s.baseURL, param.Hostname)
+	case param.IPAddr != "":
+		uri = fmt.Sprintf("%s?managementIpAddress=%s", s.baseURL, param.IPAddr)
+	case param.Serial != "":
+		uri = fmt.Sprintf("%s?serialNumber=%s", s.baseURL, param.Serial)
+	default:
+		uri = s.baseURL
+	}
+	res, err := s.http.MakeReq(uri, "GET", nil)
 	if err != nil {
-		return Resp{}, nil
+		return nil, err
 	}
 	defer res.Body.Close()
-	var netDevice Resp
-	json.NewDecoder(res.Body).Decode(&netDevice)
-	return netDevice, nil
+	resp := struct {
+		Response []Device `json:"response"`
+	}{}
+	json.NewDecoder(res.Body).Decode(&resp)
+	return resp.Response, nil
+}
+
+// GetByID ...
+func (s *Service) GetByID(id string) (Device, error) {
+	res, err := s.http.MakeReq(
+		fmt.Sprintf("%s/%s", s.baseURL, id),
+		"GET",
+		nil,
+	)
+	if err != nil {
+		return Device{}, err
+	}
+	defer res.Body.Close()
+	resp := struct {
+		Response Device `json:"response"`
+	}{}
+	json.NewDecoder(res.Body).Decode(&resp)
+	return resp.Response, nil
 }
 
 // Delete ...
-func (s *Service) Delete(id string, cleanCfg bool) {}
-
-// VLAN contains the VLAN Props of a Device
-type VLAN struct {
-	VlanNumber     int    `json:"vlanNumber"`
-	NumberOfIPs    int    `json:"numberOfIPs,omitempty"`
-	IPAddress      string `json:"ipAddress,omitempty"`
-	Prefix         string `json:"prefix,omitempty"`
-	InterfaceName  string `json:"interfaceName"`
-	NetworkAddress string `json:"networkAddress,omitempty"`
+func (s *Service) Delete(id string, cleanCfg bool) (int, error) {
+	res, err := s.http.MakeReq(
+		fmt.Sprintf("%s/%s?cleanConfig=%v", s.baseURL, id, cleanCfg),
+		"DELETE",
+		nil,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return res.StatusCode, nil
 }
 
 // VlanRes contains the resp of the Request
