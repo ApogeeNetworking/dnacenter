@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ApogeeNetworking/dnacenter/devices"
+	"github.com/ApogeeNetworking/dnacenter/events"
 	"github.com/ApogeeNetworking/dnacenter/pnp"
 	"github.com/ApogeeNetworking/dnacenter/requests"
 	siteprofile "github.com/ApogeeNetworking/dnacenter/site-profile"
@@ -27,6 +28,7 @@ type Client struct {
 	SiteProfile *siteprofile.Service
 	PnP         *pnp.Service
 	Templates   *templates.Service
+	Events      *events.Service
 }
 
 // NewClient creates a reference to the DNAC Client Struct
@@ -42,6 +44,7 @@ func NewClient(host, user, pass string, ignoreSSL bool) *Client {
 	client.SiteProfile = siteprofile.New(client.BaseURL, client.http)
 	client.PnP = pnp.New(client.BaseURL, client.http)
 	client.Templates = templates.New(client.BaseURL, client.http)
+	client.Events = events.New(client.BaseURL, client.http)
 	return client
 }
 
