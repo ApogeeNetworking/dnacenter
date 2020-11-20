@@ -270,12 +270,15 @@ type DeviceSiteClaim struct {
 	TopOfStackSerial string `json:"topOfStackSerialNumber,omitempty"`
 	// Needed for IOS-XE Device (3850|9200L)
 	// 1A|1B
-	CableScheme string `json:"cablingScheme,omitempty"`
-	ImageInfo   struct {
-		ID   string `json:"imageId"`
-		Skip bool   `json:"skip"`
-	} `json:"imageInfo"`
-	ConfigInfo DeviceConfig `json:"configInfo"`
+	CableScheme string       `json:"cablingScheme,omitempty"`
+	ImageInfo   ImageInfo    `json:"imageInfo"`
+	ConfigInfo  DeviceConfig `json:"configInfo"`
+}
+
+// ImageInfo ...
+type ImageInfo struct {
+	ID   string `json:"imageId"`
+	Skip bool   `json:"skip"`
 }
 
 // DeviceReset ...
