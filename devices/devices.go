@@ -28,11 +28,11 @@ func (s *Service) Get(param ReqParams) ([]Device, error) {
 	var uri string
 	switch {
 	case param.Hostname != "":
-		uri = fmt.Sprintf("%s?hostname=%s", s.baseURL, param.Hostname)
+		uri = fmt.Sprintf("%s?hostname=.*%s.*", s.baseURL, param.Hostname)
 	case param.IPAddr != "":
 		uri = fmt.Sprintf("%s?managementIpAddress=%s", s.baseURL, param.IPAddr)
 	case param.Serial != "":
-		uri = fmt.Sprintf("%s?serialNumber=%s", s.baseURL, param.Serial)
+		uri = fmt.Sprintf("%s?serialNumber=.*%s.*", s.baseURL, param.Serial)
 	default:
 		uri = s.baseURL
 	}
