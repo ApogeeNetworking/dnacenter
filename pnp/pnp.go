@@ -52,7 +52,9 @@ type DeviceInfo struct {
 	ProductID string `json:"pid"`
 	Serial    string `json:"serialNumber"`
 	Stack     bool   `json:"stack"`
-	// Unclaimed|Planned|Provisioned
+	// User | Network
+	Source string `json:"source"`
+	// Unclaimed | Planned | Provisioned | Error
 	State        string    `json:"state,omitempty"`
 	OnbState     string    `json:"onbState,omitempty"`
 	ImageVersion string    `json:"imageVersion,omitempty"`
