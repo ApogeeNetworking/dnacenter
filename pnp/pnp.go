@@ -136,7 +136,7 @@ func (s *Service) UpdateDevice(device Device) {
 	body := strings.NewReader(string(j))
 	res, err := s.http.MakeReq(uri, "PUT", body)
 	if err != nil {
-		// return b, fmt.Errorf("%v", err)
+		return
 	}
 	defer res.Body.Close()
 	j, _ = ioutil.ReadAll(res.Body)
@@ -449,4 +449,24 @@ func (s *Service) GetDeviceHistory(serial string) ([]DeviceHistory, error) {
 		return deviceHistory.Response, err
 	}
 	return deviceHistory.Response, nil
+}
+
+type TmplCfg struct {
+	Content string `json:"templateContent"`
+}
+
+// GetDeviceConfig ...
+func (s *Service) GetDeviceConfig(id string) (TmplCfg, error) {
+	uri := fmt.Sprintf("%s/pnp-template/%s", s.baseURL, id)
+	var cfgResp TmplCfg
+	res, err := s.http.MakeReq(uri, "GET", nil)
+	if err != nil {
+		return cfgResp, err
+	}
+	defer res.Body.Close()
+	err = json.NewDecoder(res.Body).Decode(&cfgResp)
+	if err != nil {
+		return cfgResp, err
+	}
+	return cfgResp, nil
 }
